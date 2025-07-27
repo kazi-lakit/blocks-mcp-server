@@ -1,5 +1,5 @@
 /**
- * Update Schema Tool Definition
+ * Update Schema Tool Definition with Token Generation
  */
 
 const { updateSchema } = require('../services/updateSchema');
@@ -48,17 +48,26 @@ const update_schema_tool = {
                     required: ['Name', 'Type'],
                 },
             },
-            projectKey: {
+            ProjectKey: {
                 type: 'string',
                 description: 'Project key for API access',
             },
-            bearerToken: {
+
+            blocksKey: {
                 type: 'string',
-                description: 'Bearer token for authorization',
+                description: 'Blocks key for API access',
             },
+            username: {
+                type: 'string',
+                description: 'Username for authentication',
+            },
+            userkey: {
+                type: 'string',
+                description: 'User key for authentication',
+            }
         },
-        required: ['ItemId', 'CollectionName', 'SchemaName', 'Fields', 'projectKey', 'bearerToken'],
-    },
+        required: ['ItemId', 'CollectionName', 'SchemaName', 'Fields', 'ProjectKey']
+    }
 };
 
 module.exports = update_schema_tool;

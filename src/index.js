@@ -10,12 +10,11 @@ const {
 } = require('@modelcontextprotocol/sdk/types.js');
 
 // Import utility functions
-const { debugLog } = require('./utils/logger');
+const { debugLog, getLogFilePaths, cleanupOldLogs } = require('./utils/logger');
 
 // Import tools
 const { createSchema, updateSchema } = require('./services');
 const { create_schema_tool, update_schema_tool } = require('./tools');
-
 
 class SchemaManagementServer {
     constructor() {
@@ -30,6 +29,24 @@ class SchemaManagementServer {
                 },
             }
         );
+
+        // Read environment variables
+        this.blocksKey = process.env.BLOCKS_KEY;
+        this.username = process.env.USERNAME;
+        this.userkey = process.env.USER_KEY;
+
+        debugLog('info', 'Environment variables loaded', {
+            projectKey: this.blocksKey ? '[SET]' : '[NOT SET]',
+            username: this.username ? '[SET]' : '[NOT SET]',
+            userkey: this.userkey ? '[SET]' : '[NOT SET]'
+        });
+
+        // Log file paths for reference
+        const logPaths = getLogFilePaths();
+        debugLog('info', '📁 Log files initialized', logPaths);
+
+        // Clean up old log files (keep last 7 days)
+        cleanupOldLogs(7);
 
         this.setupToolHandlers();
         debugLog('info', 'Server initialized');
@@ -52,13 +69,35 @@ class SchemaManagementServer {
         // Handle call_tool request
         this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const { name, arguments: args } = request.params;
-            debugLog('info', `Received call_tool request for: ${name}`, { arguments: args });
+            debugLog('info', `Received call_tool request for: ${name}`, { arguments: { ...args, userkey: '[HIDDEN]' } });
 
             try {
+                // Automatically inject environment variables into args
+                const enrichedArgs = {
+                    ...args,
+                    blocksKey: args.blocksKey || this.blocksKey,
+                    username: args.username || this.username,
+                    userkey: args.userkey || this.userkey
+                };
+
+                // Validate that we have all required credentials
+                if (!enrichedArgs.blocksKey || !enrichedArgs.username || !enrichedArgs.userkey) {
+                    const missing = [];
+                    if (!enrichedArgs.blocksKey) missing.push('blocksKey');
+                    if (!enrichedArgs.username) missing.push('username');
+                    if (!enrichedArgs.userkey) missing.push('userkey');
+
+                    debugLog('error', 'Missing credentials', { missing });
+                    throw new McpError(
+                        ErrorCode.InvalidParams,
+                        `Missing required credentials: ${missing.join(', ')}. Please check your MCP configuration.`
+                    );
+                }
+
                 if (name === 'create_schema') {
-                    return await createSchema(args);
+                    return await createSchema(enrichedArgs);
                 } else if (name === 'update_schema') {
-                    return await updateSchema(args);
+                    return await updateSchema(enrichedArgs);
                 } else {
                     debugLog('error', `Unknown tool: ${name}`);
                     throw new McpError(
@@ -80,8 +119,6 @@ class SchemaManagementServer {
             }
         });
     }
-
-
 
     async run() {
         const transport = new StdioServerTransport();

@@ -1,5 +1,5 @@
 /**
- * Create Schema Tool Definition
+ * Create Schema Tool Definition with Token Generation
  */
 
 const { createSchema } = require('../services/createSchema');
@@ -44,16 +44,25 @@ const create_schema_tool = {
                     required: ['Name', 'Type'],
                 },
             },
-            projectKey: {
+            ProjectKey: {
                 type: 'string',
                 description: 'Project key for API access',
             },
-            bearerToken: {
+
+            blocksKey: {
                 type: 'string',
-                description: 'Bearer token for authorization',
+                description: 'Blocks key for API access',
             },
+            username: {
+                type: 'string',
+                description: 'Username for authentication',
+            },
+            userkey: {
+                type: 'string',
+                description: 'User key for authentication',
+            }
         },
-        required: ['CollectionName', 'SchemaName', 'Fields', 'projectKey', 'bearerToken'],
+        required: ['CollectionName', 'SchemaName', 'Fields', 'ProjectKey']
     },
 };
 

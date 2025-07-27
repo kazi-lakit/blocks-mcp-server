@@ -1,9 +1,10 @@
 /**
- * Update Schema Tool Implementation
+ * Update Schema Service Implementation with Token Generation
  */
 
 const { ErrorCode, McpError } = require('@modelcontextprotocol/sdk/types.js');
 const { debugLog } = require('../utils/logger');
+const generateToken = require('./authService');
 
 /**
  * Updates an existing database schema
@@ -11,19 +12,21 @@ const { debugLog } = require('../utils/logger');
  * @returns {Object} The result of the operation
  */
 async function updateSchema(args) {
-    debugLog('info', 'Starting updateSchema', { args });
+    debugLog('info', 'Starting updateSchema', { args: { ...args, userkey: '[HIDDEN]' } });
 
-    const { ItemId, CollectionName, SchemaName, SchemaType = 1, Fields, projectKey, bearerToken } = args;
+    const { ItemId, CollectionName, SchemaName, SchemaType = 1, Fields, ProjectKey, blocksKey, username, userkey } = args;
 
-    // Validate required fields
-    if (!ItemId || !CollectionName || !SchemaName || !Fields || !Array.isArray(Fields) || !projectKey || !bearerToken) {
+    // Validate required fields (now including username and userkey instead of bearerToken)
+    if (!ItemId || !CollectionName || !SchemaName || !Fields || !Array.isArray(Fields) || !ProjectKey || !blocksKey || !username || !userkey) {
         const missingFields = [];
         if (!ItemId) missingFields.push('ItemId');
         if (!CollectionName) missingFields.push('CollectionName');
         if (!SchemaName) missingFields.push('SchemaName');
         if (!Fields || !Array.isArray(Fields)) missingFields.push('Fields');
-        if (!projectKey) missingFields.push('projectKey');
-        if (!bearerToken) missingFields.push('bearerToken');
+        if (!ProjectKey) missingFields.push('ProjectKey');
+        if (!blocksKey) missingFields.push('blocksKey');
+        if (!username) missingFields.push('username');
+        if (!userkey) missingFields.push('userkey');
 
         debugLog('error', 'Missing required fields', { missingFields });
         throw new McpError(
@@ -43,29 +46,37 @@ async function updateSchema(args) {
         }
     }
 
-    const payload = {
-        ItemId,
-        CollectionName,
-        SchemaName,
-        SchemaType,
-        Fields,
-    };
-
-    const headers = {
-        'Content-Type': 'application/json',
-        'x-blocks-key': projectKey,
-        'Authorization': `Bearer ${bearerToken}`,
-    };
-
-    debugLog('info', 'Making API request', {
-        url: 'https://dev-api.seliseblocks.com/graphql/v1/schemas/define',
-        method: 'PUT',
-        headers: { ...headers, Authorization: 'Bearer [HIDDEN]' }, // Hide token in logs
-        payload
-    });
-
     try {
-        const response = await fetch('https://dev-api.seliseblocks.com/graphql/v1/schemas/define', {
+        // Generate token first
+        debugLog('info', 'Generating authentication token');
+        const bearerToken = await generateToken(username, userkey, blocksKey);
+        debugLog('info', 'Token generated successfully');
+
+        const payload = {
+            ItemId,
+            CollectionName,
+            SchemaName,
+            SchemaType,
+            Fields,
+            ProjectKey
+        };
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'x-blocks-key': blocksKey,
+            'Authorization': `Bearer ${bearerToken}`,
+        };
+
+        const requestUrl = 'https://dev-api.seliseblocks.com/graphql/v1/schemas/define';
+
+        debugLog('info', 'Making API request', {
+            url: requestUrl,
+            method: 'PUT',
+            headers: { ...headers, Authorization: 'Bearer [HIDDEN]' }, // Hide token in logs
+            payload
+        });
+
+        const response = await fetch(requestUrl, {
             method: 'PUT',
             headers,
             body: JSON.stringify(payload),
