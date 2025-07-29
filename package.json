@@ -44,7 +44,7 @@
       },
       {
         "name": "update_schema", 
-        "description": "Update an existing database schema"
+        "description": "Update an existing database schema with new field definitions"
       }
     ]
   }

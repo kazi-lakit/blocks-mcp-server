@@ -5,6 +5,7 @@
 export interface Field {
   Name: string;
   Type: string;
+  IsArray: boolean;
 }
 
 export interface CreateSchemaArgs {
@@ -13,9 +14,7 @@ export interface CreateSchemaArgs {
   SchemaType?: number;
   Fields: Field[];
   ProjectKey: string;
-  blocksKey: string;
-  username: string;
-  userkey: string;
+  
 }
 
 export interface UpdateSchemaArgs extends CreateSchemaArgs {

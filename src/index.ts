@@ -15,16 +15,18 @@ import { debugLog, getLogFilePaths, cleanupOldLogs } from './utils/logger';
 // Import tools
 import { createSchema, updateSchema } from './services';
 import { create_schema_tool, update_schema_tool } from './tools';
-import { CreateSchemaArgs, UpdateSchemaArgs } from './types';
+import { CreateSchemaArgs, Field, UpdateSchemaArgs } from './types';
 
 interface ServerCredentials {
   blocksKey?: string;
   username?: string;
   userkey?: string;
+  apiBaseUrl?: string;
 }
 
 class SchemaManagementServer {
   private server: Server;
+  private apiBaseUrl?: string;
   private blocksKey?: string;
   private username?: string;
   private userkey?: string;
@@ -46,11 +48,13 @@ class SchemaManagementServer {
     this.blocksKey = process.env.BLOCKS_KEY;
     this.username = process.env.USERNAME;
     this.userkey = process.env.USER_KEY;
+    this.apiBaseUrl = process.env.API_BASE_URL;
 
     debugLog('info', 'Environment variables loaded', {
       projectKey: this.blocksKey ? '[SET]' : '[NOT SET]',
       username: this.username ? '[SET]' : '[NOT SET]',
-      userkey: this.userkey ? '[SET]' : '[NOT SET]'
+      userkey: this.userkey ? '[SET]' : '[NOT SET]',
+      apiBaseUrl: this.apiBaseUrl ? '[SET]' : '[NOT SET]'
     });
 
     // Log file paths for reference
@@ -86,34 +90,33 @@ class SchemaManagementServer {
       });
 
       try {
-        const sArgs = args ?? {};
-        // Automatically inject environment variables into args
-        const enrichedArgs = {
-          ...sArgs,
-          blocksKey: sArgs.blocksKey || this.blocksKey,
-          username: sArgs.username || this.username,
-          userkey: sArgs.userkey || this.userkey
-        };
+        const promptArgs = args ?? {};
+        // // Automatically inject environment variables into args
+        // const enrichedArgs = {
+        //   ...sArgs
+        // };
 
-        // Validate that we have all required credentials
-        if (!enrichedArgs.blocksKey || !enrichedArgs.username || !enrichedArgs.userkey) {
-          const missing: string[] = [];
-          if (!enrichedArgs.blocksKey) missing.push('blocksKey');
-          if (!enrichedArgs.username) missing.push('username');
-          if (!enrichedArgs.userkey) missing.push('userkey');
+        // // Validate that we have all required credentials
+        // if (!enrichedArgs.blocksKey || !enrichedArgs.username || !enrichedArgs.userkey) {
+        //   const missing: string[] = [];
+        //   if (!enrichedArgs.blocksKey) missing.push('blocksKey');
+        //   if (!enrichedArgs.username) missing.push('username');
+        //   if (!enrichedArgs.userkey) missing.push('userkey');
 
-          debugLog('error', 'Missing credentials', { missing });
-          throw new McpError(
-            ErrorCode.InvalidParams,
-            `Missing required credentials: ${missing.join(', ')}. Please check your MCP configuration.`
-          );
-        }
+        //   debugLog('error', 'Missing credentials', { missing });
+        //   throw new McpError(
+        //     ErrorCode.InvalidParams,
+        //     `Missing required credentials: ${missing.join(', ')}. Please check your MCP configuration.`
+        //   );
+        // }
+ 
+        
 
         if (name === 'create_schema') {
-          const result = await createSchema(enrichedArgs as CreateSchemaArgs);
+          const result = await createSchema(promptArgs);
           return result as any;
         } else if (name === 'update_schema') {
-          const result = await updateSchema(enrichedArgs as UpdateSchemaArgs);
+          const result = await updateSchema(promptArgs);
           return result as any;
         } else {
           debugLog('error', `Unknown tool: ${name}`);
@@ -142,6 +145,8 @@ class SchemaManagementServer {
       }
     });
   }
+
+  
 
   async run(): Promise<void> {
     const transport = new StdioServerTransport();

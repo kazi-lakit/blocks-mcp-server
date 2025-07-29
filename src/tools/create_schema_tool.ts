@@ -40,6 +40,10 @@ const create_schema_tool: ToolDefinition = {
               type: 'string',
               description: 'Field type (String, Float, etc.)',
             },
+            IsArray: {
+              type: 'boolean',
+              description: 'Indicates if the field is an array',
+            }
           },
           required: ['Name', 'Type'],
         },
@@ -47,18 +51,6 @@ const create_schema_tool: ToolDefinition = {
       ProjectKey: {
         type: 'string',
         description: 'Project key for API access',
-      },
-      blocksKey: {
-        type: 'string',
-        description: 'Blocks key for API access',
-      },
-      username: {
-        type: 'string',
-        description: 'Username for authentication',
-      },
-      userkey: {
-        type: 'string',
-        description: 'User key for authentication',
       }
     },
     required: ['CollectionName', 'SchemaName', 'Fields', 'ProjectKey']

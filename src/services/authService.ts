@@ -6,22 +6,22 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { debugLog, logApiCall } from '../utils/logger';
 import { AuthTokenResponse } from '../types';
 
-/**
- * Generates an authentication token using username and userkey
- * @param username - Username for authentication
- * @param userkey - User key for authentication
- * @param blocksKey - Project key for authentication
- * @returns The bearer token
- */
-async function generateToken(username: string, userkey: string, blocksKey: string): Promise<string> {
+
+async function generateToken(): Promise<string> {
+  const username = process.env.USERNAME;
+  const userkey = process.env.USER_KEY;
+  const blocksKey = process.env.BLOCKS_KEY;
+  const apiBaseUrl = process.env.API_BASE_URL;
+
   debugLog('info', '🔐 Starting token generation process', { username, blocksKey });
 
   // Validate required fields
-  if (!username || !userkey || !blocksKey) {
+  if (!username || !userkey || !blocksKey || !apiBaseUrl) {
     const missingFields: string[] = [];
     if (!username) missingFields.push('username');
     if (!userkey) missingFields.push('userkey');
     if (!blocksKey) missingFields.push('blocksKey');
+    if (!apiBaseUrl) missingFields.push('apiBaseUrl');
 
     debugLog('error', '❌ Missing required fields for token generation', { missingFields });
     throw new McpError(
@@ -41,7 +41,7 @@ async function generateToken(username: string, userkey: string, blocksKey: strin
     'x-blocks-key': blocksKey
   };
 
-  const tokenUrl = 'https://dev-api.seliseblocks.com/authentication/v1/OAuth/Token';
+  const tokenUrl = `${apiBaseUrl}/authentication/v1/OAuth/Token`;
 
   // Log API request (hide sensitive data)
   logApiCall('REQUEST', tokenUrl, {
